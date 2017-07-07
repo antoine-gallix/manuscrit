@@ -36,9 +36,6 @@ from os.path import expanduser
 from pathlib2 import Path
 from sys import exit
 
-
-
-
 # ---------------------SETTINGS---------------------
 
 INDENT_STEP = 8
@@ -84,8 +81,9 @@ class Logger:
 
     def __init__(self, file=default_logging_file):
         assert file, "file is not specified"
-        self.logging_file = self.full_path(file)
-        Path(file).parent.mkdir(parents=True, exist_ok=True)
+        path_object = Path(file).expanduser().resolve()
+        self.logging_file = str(path_object)
+        path_object.parent.mkdir(parents=True, exist_ok=True)
         self.reset_file()
         self.pad_file()
         # internal writer
@@ -94,6 +92,8 @@ class Logger:
 
         self.indent_level = 0
         self.indent_step = INDENT_STEP
+
+        self(title='[ {} ]'.format(self.logging_file))
 
     def reset_file(self):
         """truncate
@@ -109,13 +109,9 @@ class Logger:
         with open(self.logging_file, 'a') as f:
             f.write('\n' * n)
 
-    @staticmethod
-    def full_path(path):
-        return abspath(expanduser(str(path)))
-
     # ---------------------prints---------------------
 
-    def __call__(self, thing=None, title=None,**kwargs):
+    def __call__(self, thing=None, title=None, **kwargs):
         """Simplest write to the logging file
 
         auto formats:
@@ -143,11 +139,11 @@ class Logger:
             string = '!! imput is not a valid json string !!'
         self(string, *args, **kwargs)
 
-    def request(self, r, *args, **kwargs):
+    def http(self, r, *args, **kwargs):
         """Log a request response from `request` package."""
 
-        string = type_format.format_request(r, *args, **kwargs)
-        self(string, *args, **kwargs)
+        string = type_format.format_response(r, *args, **kwargs)
+        self(string)
 
     def object(self, o, *args, **kwargs):
         """Log Object. Logs an object class, attributes names and classes, and methods.
@@ -156,13 +152,6 @@ class Logger:
         Show the object type, it's attributes and their respective types and list all it's callable separately"""
         string = type_format.format_object(o, **kwargs)
         self(string, *args, **kwargs)
-
-    def log_me(meo, title=None):
-        """Log Mongoengine. Log a mongoengine object"""
-
-        if title:
-            _log_line_spaced(_make_title(title, 4))
-        log_s(json.loads(meo.to_json()))
 
     def function(self):
         """Log Function.
@@ -185,7 +174,15 @@ class Logger:
         """
 
         content = type_format.log_state(1)
-        self.this(text_format.wrap_in_lines(content))
+        self(text_format.wrap_in_lines(content))
+
+    def log_me(meo, title=None):
+        """Log Mongoengine. Log a mongoengine object"""
+
+        if title:
+            _log_line_spaced(_make_title(title, 4))
+        log_s(json.loads(meo.to_json()))
+
     # ---------------------settings---------------------
 
     def raise_indent(self):

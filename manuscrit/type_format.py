@@ -2,6 +2,10 @@ from pprint import pformat
 import inspect
 import json
 import os
+from jinja2 import Template
+
+request_template_file = 'request_template'
+
 
 def format_object(o, show_all=False, show_values=False):
     """Return a string describing an object
@@ -64,74 +68,16 @@ def format_object(o, show_all=False, show_values=False):
     return '\n'.join(output)
 
 
-def format_request(r, **kwargs):
-    """Format a Requests request object for nicer debugging.
-
-    Print request method, url, status code, errors, payload, and response.
-    """
-    sep = '-' * 10
-    query = kwargs.get('query', False)
-    # ----| gather information
-    if query:  # query only
-        body = pformat(json.loads(r.body)) if r.body else ''
-        method = r.method
-        path_url = r.path_url
-        status = None
-        json_content = pformat(r.json)
-        request_headers = pformat(dict(r.headers))
-        content = None
-        request_body = None
-    else:  # query + response
-        request_body = pformat(json.loads(r.request.body)
-                               ) if r.request.body else ''
-        method = r.request.method
-        path_url = r.request.path_url
-        status = r.status_code
-        if not r.ok:
-            reason = r.reason
-        try:
-            json_content = pformat(r.json())
-        except ValueError:
-            json_content = None
-        request_headers = pformat(dict(r.request.headers))
-        response_headers = pformat(dict(r.headers))
-
-    # ----| build template
-    template = ''
-    template += '{sep}' * 3
-    template += '\n'
-    template += '{sep}QUERY'
-    template += '\n\n'
-    template += '{method} {url}'
-    template += '\n'
-    if kwargs.get('show_headers',False):
-        template += '\n'
-        template += '{sep}HEADERS'
-        template += '\n\n'
-        template += '{request_headers}'
-        template += '\n'
-    if request_body:
-        template += '\n'
-        template += '{sep}CONTENT'
-        template += '\n\n'
-        template += '{request_body}'
-        template += '\n'
-    template += '\n\n'
-    if not query:
-        template += '{sep}RESPONSE\n'
-        if r.ok:
-            template += 'OK : {status}'
-        else:
-            template += 'Error : {status} {reason}'
-    if json_content:
-        template += '\n{json_content}'
-    template += '\n\n'
-    template += '{sep}' * 3
-
-    # ----| format
-    return template.format(
-        url=r.url,
-        **locals())
+def format_response(response, title=''):
+    template = Template(open(request_template_file).read())
+    try:
+        response_body = response.json()
+    except ValueError:
+        response_body = None
+    return template.render(
+        title=title,
+        response=response,
+        response_body=response_body)
 
 
 def log_state(n=0):
@@ -142,7 +88,7 @@ def log_state(n=0):
     caller_frame, calling_file, calling_line, calling_function, _, _ = inspect.stack()[
         1 + n]
     calling_file_name = os.path.basename(calling_file)
-    # caller_locals = pformat(caller_frame.f_locals)
+    caller_locals = pformat(caller_frame.f_locals)
 
     # over caller level
     (caller_frame_2, calling_file_2, calling_line_2,
@@ -158,13 +104,16 @@ def log_state(n=0):
     template.append('\n')
     template.append('----| arguments')
     template.append('\n')
-    for k,v in caller_frame.f_locals.iteritems():
-        template.append('{} : {}'.format(k,v))
-    # template.append('{caller_locals}')
+    # dict version
+    # for k, v in caller_frame.f_locals.iteritems():
+    #     template.append('{} : {}'.format(k, v))
+    # simple version
+    template.append('{caller_locals}')
     template.append('\n')
     template.append('-----calling function\n')
     template.append(
         '{calling_function_2}() in {calling_file_name_2}\n({calling_file_2}:{calling_line_2})')
+
     template = '\n'.join(template)
 
     rendered = template.format(**locals())

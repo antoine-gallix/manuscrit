@@ -1,0 +1,19 @@
+{%if title%}
+----------[{{title|center(25)}}]----------
+{%else%}
+---------------------------------------
+{%endif%}
+
+{{response.request.method}} {{response.url}}
+{%if response.request.body%}
+{{response.request.body}}
+{%endif%}
+
+-----------------------------------------------
+
+{{response.status_code}} :  {{response.reason}}
+{%if response_body%}
+{{response_body|pprint}}
+{%endif%}
+
+-----------------------------------------------

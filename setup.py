@@ -6,5 +6,7 @@ setup(
     install_requires=[
         'simplejson',
         'pathlib2',
+        'attrs',
+        'jinja2',
     ]
 )
