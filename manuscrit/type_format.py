@@ -3,8 +3,14 @@ import inspect
 import json
 import os
 from jinja2 import Template
+import os.path
 
 request_template_file = 'request_template'
+
+
+def load_template(template_name):
+    filepath = os.path.join(os.path.dirname(__file__), template_name)
+    return Template(open(filepath).read())
 
 
 def format_object(o, show_all=False, show_values=False):
@@ -69,7 +75,7 @@ def format_object(o, show_all=False, show_values=False):
 
 
 def format_response(response, title=''):
-    template = Template(open(request_template_file).read())
+    template = load_template(request_template_file)
     try:
         response_body = response.json()
     except ValueError:
