@@ -1,6 +1,5 @@
 from pprint import pformat
 import inspect
-import json
 import os
 from jinja2 import Template
 import os.path
